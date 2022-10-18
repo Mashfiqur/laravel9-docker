@@ -1,0 +1,56 @@
+version: "3.7"
+
+#Volumes
+volumes:
+  laravel9dockerdbdata:
+    driver: local
+
+services:
+    app:
+        container_name: laravel9docker-app
+        build:
+            context: .
+            dockerfile: ./.docker/php/Dockerfile
+        image: laravel9docker-app-image
+        restart: unless-stopped
+        working_dir: /var/www/html
+        volumes:
+            - ./:/var/www/html
+        networks: 
+            - laravel9docker-net
+    
+    # nginx
+    nginx:
+        container_name: laravel9docker-nginx
+        image: nginx:alpine
+        restart: unless-stopped
+        ports: 
+            - "80:80"
+        volumes: 
+            - ./:/var/www/html
+            - ./.docker/nginx/:/etc/nginx/conf.d/
+        networks: 
+            - laravel9docker-net
+
+    # db mysql
+    mysql:
+        image: mysql:8.0.28
+        restart: unless-stopped
+        tty: true
+        env_file:
+          - ./.env
+        environment: 
+            MYSQL_DATABASE: "laravel9docker_db"
+            MYSQL_ROOT_PASSWORD: "laravel9docker_password"
+            MYSQL_ROOT_HOST: '%'
+        volumes: 
+            - ./.docker/mysql/my.cnf:/etc/my.cnf
+            - laravel9dockerdbdata:/var/lib/mysql/
+        ports: 
+            - "3388:3306"
+        networks: 
+            - laravel9docker-net
+
+networks: 
+    laravel9docker-net:
+        driver: bridge
